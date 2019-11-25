@@ -1,5 +1,6 @@
-package com.android.tech_task.ui;
+package com.android.tech_task.ui.main;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -9,17 +10,25 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.tech_task.R;
-import com.android.tech_task.view_model.MainViewModel;
+import com.android.tech_task.adapter.ImageAdapter;
+import com.android.tech_task.model.Image;
+import com.android.tech_task.ui.fullimageview.FullscreenActivity;
 
-public class MainActivity extends AppCompatActivity {
+import java.util.ArrayList;
+
+public class MainActivity extends AppCompatActivity implements ImageSelectedListener {
 
     private TextView tvMsg;
     private View btnRetry;
     private View progressBar;
     private SearchView searchView;
     private MainViewModel mainViewModel;
+    private ArrayList<Image> imageArrayList=new ArrayList<>();
+    private ImageAdapter imageAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +41,15 @@ public class MainActivity extends AppCompatActivity {
         tvMsg=findViewById(R.id.tvMsg);
         btnRetry=findViewById(R.id.btnRetry);
         progressBar=findViewById(R.id.progressBar);
+
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+        GridLayoutManager gridLayoutManager=new GridLayoutManager(this,2);
+        recyclerView.setLayoutManager(gridLayoutManager);
+        recyclerView.setHasFixedSize(true);
+
+        imageAdapter=new ImageAdapter(imageArrayList,this);
+        recyclerView.setAdapter(imageAdapter);
+
         btnRetry.setOnClickListener(view ->getImages(searchView.getQuery().toString()));
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
     }
@@ -63,11 +81,18 @@ public class MainActivity extends AppCompatActivity {
             mainViewModel.getImageResponseLiveData().observe(this, imageResponse -> {
                 hideProgressBar();
                 if (imageResponse != null) {
-
-
+                    imageArrayList.addAll(imageResponse.getImages());
+                    imageAdapter.notifyDataSetChanged();
+                }else {
+                    showErrorView();
                 }
             });
         }
+    }
+
+    private void showErrorView() {
+        tvMsg.setVisibility(View.VISIBLE);
+        btnRetry.setVisibility(View.VISIBLE);
     }
 
     private void hideProgressBar() {
@@ -78,5 +103,14 @@ public class MainActivity extends AppCompatActivity {
         progressBar.setVisibility(View.VISIBLE);
         tvMsg.setVisibility(View.GONE);
         btnRetry.setVisibility(View.GONE);
+        imageArrayList.clear();
+        imageAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onImageSelected(Image image) {
+        Intent intent=new Intent(this, FullscreenActivity.class);
+        intent.putExtra("data",image);
+        startActivity(intent);
     }
 }

@@ -1,4 +1,4 @@
-package com.android.tech_task.view_model;
+package com.android.tech_task.ui.main;
 
 import android.app.Application;
 

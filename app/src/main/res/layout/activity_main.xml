@@ -4,13 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.MainActivity">
+    tools:context=".ui.main.MainActivity">
 
     <TextView
         android:id="@+id/tvMsg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
+        android:text="@string/something_went_wrong"
         app:layout_constraintVertical_chainStyle="packed"
         app:layout_constraintVertical_bias=".4"
         app:layout_constraintBottom_toTopOf="@id/btnRetry"
@@ -32,6 +33,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
