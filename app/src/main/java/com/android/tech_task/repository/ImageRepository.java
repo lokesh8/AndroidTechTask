@@ -21,9 +21,9 @@ public class ImageRepository {
         apiRequest = RetrofitRequest.getRetrofitInstance().create(ApiRequest.class);
     }
 
-    public MutableLiveData<ImageResponse> getImages(String query, String type) {
+    public MutableLiveData<ImageResponse> getImages(int page,String query, String type) {
         final MutableLiveData<ImageResponse> data = new MutableLiveData<>();
-        apiRequest.getImages(BuildConfig.PIXABAY_KEY, query,type)
+        apiRequest.getImages(BuildConfig.PIXABAY_KEY, query,type,page)
                 .enqueue(new Callback<ImageResponse>() {
 
 

@@ -20,8 +20,8 @@ public class MainViewModel extends AndroidViewModel {
         imageRepository = new ImageRepository();
     }
 
-    public void searchImages(String query) {
-        this.imageResponseLiveData = imageRepository.getImages(query, "photo");
+    public void getImages(int page) {
+        this.imageResponseLiveData = imageRepository.getImages(page,"cars", "photo");
     }
 
     public LiveData<ImageResponse> getImageResponseLiveData() {

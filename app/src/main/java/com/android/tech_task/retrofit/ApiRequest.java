@@ -12,7 +12,8 @@ public interface ApiRequest {
     Call<ImageResponse> getImages(
             @Query("key") String key,
             @Query("q") String query,
-            @Query("image_type") String type
+            @Query("image_type") String type,
+            @Query("page") int page
     );
 }
 

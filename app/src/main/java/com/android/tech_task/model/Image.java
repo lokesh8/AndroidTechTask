@@ -5,16 +5,33 @@ import android.os.Parcelable;
 
 public class Image implements Parcelable {
 
+    public static final Creator<Image> CREATOR = new Creator<Image>() {
+        @Override
+        public Image createFromParcel(Parcel in) {
+            return new Image(in);
+        }
+
+        @Override
+        public Image[] newArray(int size) {
+            return new Image[size];
+        }
+    };
     private double id;
     private String largeImageURL;
     private String previewURL;
     private String type;
+    private int viewType;
 
     private Image(Parcel in) {
         id = in.readDouble();
         largeImageURL = in.readString();
         previewURL = in.readString();
         type = in.readString();
+        viewType = in.readInt();
+    }
+
+    public Image(int viewType) {
+        this.viewType = viewType;
     }
 
     public double getId() {
@@ -49,6 +66,14 @@ public class Image implements Parcelable {
         this.type = type;
     }
 
+    public int getViewType() {
+        return viewType;
+    }
+
+    public void setViewType(int viewType) {
+        this.viewType = viewType;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -60,17 +85,6 @@ public class Image implements Parcelable {
         parcel.writeString(largeImageURL);
         parcel.writeString(previewURL);
         parcel.writeString(type);
+        parcel.writeInt(viewType);
     }
-
-    public static final Creator<Image> CREATOR = new Creator<Image>() {
-        @Override
-        public Image createFromParcel(Parcel in) {
-            return new Image(in);
-        }
-
-        @Override
-        public Image[] newArray(int size) {
-            return new Image[size];
-        }
-    };
 }

@@ -1,22 +1,19 @@
 package com.android.tech_task.ui.main;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.tech_task.R;
 import com.android.tech_task.adapter.ImageAdapter;
 import com.android.tech_task.model.Image;
-import com.android.tech_task.ui.fullimageview.FullscreenActivity;
 
 import java.util.ArrayList;
 
@@ -25,10 +22,13 @@ public class MainActivity extends AppCompatActivity implements ImageSelectedList
     private TextView tvMsg;
     private View btnRetry;
     private View progressBar;
-    private SearchView searchView;
     private MainViewModel mainViewModel;
-    private ArrayList<Image> imageArrayList=new ArrayList<>();
+    private ArrayList<Image> imageArrayList = new ArrayList<>();
     private ImageAdapter imageAdapter;
+    private int page = 1;
+    private boolean mLoading = true;
+    private LinearLayoutManager linearLayoutManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,61 +38,84 @@ public class MainActivity extends AppCompatActivity implements ImageSelectedList
     }
 
     private void initialization() {
-        tvMsg=findViewById(R.id.tvMsg);
-        btnRetry=findViewById(R.id.btnRetry);
-        progressBar=findViewById(R.id.progressBar);
+        tvMsg = findViewById(R.id.tvMsg);
+        btnRetry = findViewById(R.id.btnRetry);
+        progressBar = findViewById(R.id.progressBar);
 
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
-        GridLayoutManager gridLayoutManager=new GridLayoutManager(this,2);
-        recyclerView.setLayoutManager(gridLayoutManager);
+        linearLayoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(linearLayoutManager);
         recyclerView.setHasFixedSize(true);
 
-        imageAdapter=new ImageAdapter(imageArrayList,this);
+        imageAdapter = new ImageAdapter(imageArrayList, this);
         recyclerView.setAdapter(imageAdapter);
 
-        btnRetry.setOnClickListener(view ->getImages(searchView.getQuery().toString()));
+        btnRetry.setOnClickListener(view -> getImages());
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_search,menu);
-        MenuItem menuItem=menu.findItem(R.id.action_search);
-        searchView= (SearchView) menuItem.getActionView();
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                getImages(s);
-                return false;
-            }
+        getImages();
 
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public boolean onQueryTextChange(String s) {
-                return false;
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                if (mLoading) {
+                    if (dy > 0) {//check for scroll down
+                        int visibleItemCount = linearLayoutManager.getChildCount();
+                        int totalItemCount = linearLayoutManager.getItemCount();
+                        int pastVisibleItems = linearLayoutManager.findFirstVisibleItemPosition();
+                        if ((visibleItemCount + pastVisibleItems) >= totalItemCount) {
+                            mLoading = false;
+                            getImages();
+                            imageArrayList.add( new Image(ImageAdapter.VIEW_TYPE_LOADING));
+                            imageAdapter.notifyItemRangeInserted(imageArrayList.size()-1 ,1);
+                        }
+                    }
+
+                }
             }
         });
-        return super.onCreateOptionsMenu(menu);
     }
 
-    private void getImages(String query) {
-        if(!query.isEmpty()){
-            showProgressBar();
-            mainViewModel.searchImages(query);
-            mainViewModel.getImageResponseLiveData().observe(this, imageResponse -> {
-                hideProgressBar();
-                if (imageResponse != null) {
-                    imageArrayList.addAll(imageResponse.getImages());
-                    imageAdapter.notifyDataSetChanged();
-                }else {
-                    showErrorView();
+    private void getImages() {
+        showProgressBar();
+        mainViewModel.getImages(page);
+        mainViewModel.getImageResponseLiveData().observe(this, imageResponse -> {
+            hideProgressBar();
+            if (imageResponse != null) {
+                int positionStart;
+                if (imageArrayList.size() > 0) {
+                    positionStart = imageArrayList.size() - 1;
+                } else {
+                    positionStart = 0;
                 }
-            });
-        }
+
+                if (imageArrayList.size() > 0 && imageArrayList.get(positionStart).getViewType() == ImageAdapter.VIEW_TYPE_LOADING) {
+                    imageArrayList.remove(positionStart);
+                    imageAdapter.notifyItemRangeRemoved(positionStart, 1);
+                    positionStart -= 1;
+                }
+
+                if (imageResponse.getImages().size() > 0) {
+                    page++;
+                    imageArrayList.addAll(imageResponse.getImages());
+                    imageAdapter.notifyItemRangeInserted(positionStart+1, imageResponse.getImages().size());
+                    if (imageResponse.getImages().size() == 20) {//call get order api only if items.size equal to count
+                        mLoading = true;
+                    }
+                }
+            } else {
+                showErrorView();
+            }
+        });
     }
 
     private void showErrorView() {
-        tvMsg.setVisibility(View.VISIBLE);
-        btnRetry.setVisibility(View.VISIBLE);
+        if(imageArrayList.size()==0) {
+            tvMsg.setVisibility(View.VISIBLE);
+            btnRetry.setVisibility(View.VISIBLE);
+        }
     }
 
     private void hideProgressBar() {
@@ -100,17 +123,15 @@ public class MainActivity extends AppCompatActivity implements ImageSelectedList
     }
 
     private void showProgressBar() {
-        progressBar.setVisibility(View.VISIBLE);
-        tvMsg.setVisibility(View.GONE);
-        btnRetry.setVisibility(View.GONE);
-        imageArrayList.clear();
-        imageAdapter.notifyDataSetChanged();
+        if(imageArrayList.size()==0){
+            progressBar.setVisibility(View.VISIBLE);
+            tvMsg.setVisibility(View.GONE);
+            btnRetry.setVisibility(View.GONE);
+        }
     }
 
     @Override
     public void onImageSelected(Image image) {
-        Intent intent=new Intent(this, FullscreenActivity.class);
-        intent.putExtra("data",image);
-        startActivity(intent);
+        //Do Something on image select
     }
 }
